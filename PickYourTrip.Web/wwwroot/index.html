@@ -1,0 +1,436 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pick Your Trip | Your Story, Your Trail</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>✈️</text></svg>">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <!-- ============================================= -->
+    <!--      <<< (1) CSS STYLESHEET SECTION >>>       -->
+    <!-- ============================================= -->
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc;
+            scroll-behavior: smooth;
+        }
+
+        .spinner {
+            border-top-color: currentColor;
+            border-right-color: transparent;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .hero-section {
+            position: relative;
+            overflow: hidden;
+            height: 80vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #hero-images-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+
+            #hero-images-container img {
+                position: absolute;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                object-fit: cover;
+                opacity: 0;
+                transition: opacity 1.5s ease-in-out;
+            }
+
+                #hero-images-container img.visible {
+                    opacity: 1;
+                }
+
+        .hero-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 2;
+        }
+
+        .hero-content {
+            position: relative;
+            z-index: 3;
+        }
+
+        .modal-backdrop {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.6);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+        }
+
+            .modal-backdrop.active {
+                opacity: 1;
+                visibility: visible;
+            }
+
+        .modal-content {
+            background-color: white;
+            padding: 2rem;
+            border-radius: 0.75rem;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+            transform: scale(0.95);
+            transition: transform 0.3s ease;
+            max-width: 95%;
+            width: 100%;
+            position: relative;
+        }
+
+        .modal-backdrop.active .modal-content {
+            transform: scale(1);
+        }
+
+        .prose-styles ul {
+            list-style-type: disc;
+            margin-left: 1.5rem;
+        }
+
+        .prose-styles p {
+            margin-bottom: 1rem;
+        }
+
+        .tab-btn {
+            border-bottom: 2px solid transparent;
+            transition: all 0.2s ease-in-out;
+        }
+
+            .tab-btn.active {
+                border-bottom-color: #3b82f6;
+                color: #1e40af;
+                font-weight: 600;
+            }
+
+        .btn {
+            transition: all 0.2s ease-in-out;
+            transform: scale(1);
+        }
+
+            .btn:active {
+                transform: scale(0.95);
+            }
+
+        .destination-card {
+            scroll-snap-align: start;
+            flex-shrink: 0;
+        }
+
+        .scroll-container::-webkit-scrollbar {
+            display: none;
+        }
+
+        .scroll-container {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        .fade-in-up {
+            opacity: 0;
+            transform: translateY(20px);
+            transition: opacity 0.5s ease-out, transform 0.5s ease-out;
+        }
+
+            .fade-in-up.visible {
+                opacity: 1;
+                transform: translateY(0);
+            }
+
+        #filter-bar input, #filter-bar select {
+            border: 0;
+            outline: 0;
+            box-shadow: none;
+            background: transparent;
+        }
+
+            #filter-bar input:focus, #filter-bar select:focus {
+                ring: 0;
+                box-shadow: none;
+            }
+    </style>
+</head>
+<body class="bg-gray-100">
+
+    <!-- ============================================= -->
+    <!--        <<< (2) HTML STRUCTURE SECTION >>>     -->
+    <!-- ============================================= -->
+
+    <header class="bg-white shadow-sm sticky top-0 z-40">
+        <nav class="container mx-auto px-6 py-4 flex justify-between items-center">
+            <a href="#" class="text-2xl font-bold text-blue-600 flex items-center gap-2"><span class="text-3xl">✈️</span><span>Pick Your Trip</span></a>
+            <div class="flex items-center space-x-4">
+                <span id="userGreeting" class="hidden text-gray-600 font-medium"></span>
+                <button id="myBookingsButton" class="hidden text-gray-700 font-semibold py-2 px-4 rounded-lg hover:bg-gray-100 btn">My Bookings</button>
+                <button id="adminButton" class="hidden bg-red-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-red-700 btn">Admin</button>
+                <button id="authButton" class="bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-blue-700 btn">Login</button>
+            </div>
+        </nav>
+    </header>
+
+    <main>
+        <section class="hero-section text-white">
+            <div class="hero-overlay"></div>
+            <div id="hero-images-container">
+                <img src="https://images.unsplash.com/photo-1501785888041-af3ef285b470?q=80&w=2070&auto=format&fit=crop" alt="Scenic lake view" class="visible">
+                <img src="https://images.unsplash.com/photo-1539635278303-d4002c07eae3?q=80&w=2070&auto=format&fit=crop" alt="Friends on a beach">
+                <img src="https://images.unsplash.com/photo-1473625247510-8ceb1760943f?q=80&w=2070&auto=format&fit=crop" alt="Hiker on a mountain">
+                <img src="https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?q=80&w=2021&auto=format&fit=crop" alt="Traveler with a map">
+            </div>
+            <div class="hero-content container mx-auto px-6 text-center">
+                <h1 class="text-4xl md:text-6xl font-extrabold mb-4 leading-tight">Your Story, Your Trail</h1>
+                <p class="text-lg md:text-xl mb-8 max-w-2xl mx-auto">Craft your perfect journey with our expertly designed packages.</p>
+                <div id="filter-bar" class="bg-white p-2 rounded-lg shadow-xl mt-12 max-w-4xl mx-auto flex flex-col md:flex-row items-center space-y-4 md:space-y-0 md:space-x-2">
+                    <div class="flex-1 w-full flex items-center p-2"><svg class="w-6 h-6 text-gray-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg><div><label for="searchInput" class="block text-xs font-semibold text-gray-500 text-left">Search</label><input type="text" id="searchInput" placeholder="Package or destination..." class="w-full text-gray-800 focus:outline-none"></div></div>
+                    <div class="w-full md:w-px h-10 bg-gray-200"></div>
+                    <div class="flex-1 w-full flex items-center p-2"><svg class="w-6 h-6 text-gray-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg><div><label for="destinationFilter" class="block text-xs font-semibold text-gray-500 text-left">Destination</label><select id="destinationFilter" class="w-full text-gray-800"><option value="all">All Destinations</option></select></div></div>
+                    <div class="w-full md:w-px h-10 bg-gray-200"></div>
+                    <div class="flex-1 w-full flex items-center p-2"><svg class="w-6 h-6 text-gray-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 10v-1m0 0c-1.657 0-3-.895-3-2s1.343-2 3-2 3-.895 3-2-1.343-2-3-2m0 8c-1.11 0-2.08-.402-2.599-1"></path></svg><div><label for="priceFilter" class="block text-xs font-semibold text-gray-500 text-left">Price</label><select id="priceFilter" class="w-full text-gray-800"><option value="all">All Prices</option><option value="1000">Under $1000</option><option value="2000">$1000 - $2000</option><option value="2001">Over $2000</option></select></div></div>
+                    <button id="searchButton" class="bg-blue-600 text-white rounded-lg p-3 hover:bg-blue-700 btn w-full md:w-auto"><svg class="w-6 h-6 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg></button>
+                </div>
+                <button id="resetFilters" class="text-white text-sm mt-4 hover:underline">Reset Filters</button>
+            </div>
+        </section>
+
+        <section id="trending-destinations" class="py-20">
+            <div class="container mx-auto px-6">
+                <h2 class="text-3xl font-bold text-center text-gray-800 mb-2 fade-in-up">Trending Destinations</h2>
+                <p class="text-lg text-center text-gray-500 mb-12 fade-in-up">Get inspired for your next adventure.</p>
+                <div id="destinations-scroll-container" class="flex overflow-x-auto gap-6 scroll-container pb-4 scroll-snap-x mandatory"></div>
+            </div>
+        </section>
+
+        <section id="how-it-works" class="py-20 bg-gray-50">
+            <div class="container mx-auto px-6">
+                <h2 class="text-3xl font-bold text-center text-gray-800 mb-12 fade-in-up">How It Works</h2>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-12 text-center">
+                    <div class="fade-in-up" style="transition-delay: 100ms;"><div class="bg-blue-500 text-white w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4"><svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg></div><h3 class="text-xl font-bold mb-2">Explore & Filter</h3><p class="text-gray-600">Use our powerful search to find the perfect trip that matches your style and budget.</p></div>
+                    <div class="fade-in-up" style="transition-delay: 200ms;"><div class="bg-blue-500 text-white w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4"><svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg></div><h3 class="text-xl font-bold mb-2">View Details</h3><p class="text-gray-600">Click on any package to see a detailed itinerary and plan for your journey.</p></div>
+                    <div class="fade-in-up" style="transition-delay: 300ms;"><div class="bg-blue-500 text-white w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4"><svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg></div><h3 class="text-xl font-bold mb-2">Book Your Trip</h3><p class="text-gray-600">Securely book your adventure with just a few clicks. Your dream vacation awaits!</p></div>
+                </div>
+            </div>
+        </section>
+
+        <section id="packages" class="container mx-auto p-8">
+            <h2 id="packages-heading" class="text-3xl font-bold text-center text-gray-800 mb-12 fade-in-up">Our Handpicked Packages</h2>
+            <div id="packages-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"></div>
+            <div id="loader" class="text-center py-16"><div class="spinner h-12 w-12 border-4 rounded-full text-blue-500 mx-auto"></div><p class="mt-4 text-lg text-gray-600">Loading Packages...</p></div>
+        </section>
+    </main>
+
+    <footer class="bg-gray-800 text-white py-16">
+        <div class="container mx-auto px-6"><div class="grid grid-cols-1 md:grid-cols-4 gap-8 text-center md:text-left"><div><h3 class="font-bold text-lg mb-4">Pick Your Trip</h3><p class="text-gray-400">Crafting unforgettable journeys, one adventure at a time.</p></div><div><h3 class="font-bold text-lg mb-4">Explore</h3><ul class="space-y-2"><li class="text-gray-400 hover:text-white"><a href="#packages">Tour Packages</a></li><li class="text-gray-400 hover:text-white"><a href="#trending-destinations">Destinations</a></li></ul></div><div><h3 class="font-bold text-lg mb-4">Support</h3><ul class="space-y-2"><li class="text-gray-400 hover:text-white"><a>Contact Us</a></li><li class="text-gray-400 hover:text-white"><a>FAQ</a></li></ul></div><div><h3 class="font-bold text-lg mb-4">Stay Connected</h3><p class="text-gray-400 mb-4">Get the latest travel news and deals.</p><div class="flex"><input type="email" placeholder="Your Email" class="w-full p-2 rounded-l-lg text-gray-800"><button class="bg-blue-600 p-2 rounded-r-lg hover:bg-blue-700 btn">Go</button></div></div></div><div class="border-t border-gray-700 mt-8 pt-8 text-center text-gray-500"><p>&copy; 2025 Pick Your Trip. All rights reserved.</p></div></div>
+    </footer>
+
+    <div id="authModal" class="modal-backdrop"><div class="modal-content max-w-md"><h2 id="authTitle" class="text-2xl font-bold text-center mb-6">Login</h2><div id="authMessage" class="hidden p-3 mb-4 rounded-md text-center text-sm text-white"></div><form id="authForm"><div id="nameField" class="mb-4 hidden"><label for="name" class="block text-sm font-medium">Name</label><input type="text" id="name" name="name" class="mt-1 w-full p-2 border rounded-lg" placeholder="Your Name"></div><div class="mb-4"><label for="email" class="block text-sm font-medium">Email</label><input type="email" id="email" name="email" required class="mt-1 w-full p-2 border rounded-lg" placeholder="you@example.com"></div><div class="mb-6"><label for="password" class="block text-sm font-medium">Password</label><input type="password" id="password" name="password" required class="mt-1 w-full p-2 border rounded-lg" placeholder="••••••••"></div><button id="authSubmitButton" type="submit" class="w-full bg-blue-600 text-white p-3 rounded-lg font-bold hover:bg-blue-700 btn">Login</button></form><p class="mt-4 text-center text-sm"><a href="#" id="authToggleLink" class="text-blue-600 hover:underline">Need an account? Register</a></p><button id="closeAuthModal" class="absolute top-2 right-4 text-gray-500 text-3xl">&times;</button></div></div>
+    <div id="adminModal" class="modal-backdrop"><div class="modal-content max-w-6xl max-h-[90vh] overflow-y-auto"><div class="flex justify-between items-center mb-4"><h2 class="text-3xl font-bold">Admin Dashboard</h2><button id="closeAdminModalBtn" class="text-gray-500 text-3xl">&times;</button></div><div class="border-b mb-6"><nav class="-mb-px flex space-x-6"><button id="packagesTab" class="tab-btn active py-3 px-1 text-base">Packages</button><button id="destinationsTab" class="tab-btn py-3 px-1 text-base text-gray-500">Destinations</button></nav></div><div id="packagesTabContent"><div class="grid lg:grid-cols-3 gap-8"><div class="lg:col-span-1 bg-gray-50 p-6 rounded-lg self-start"><h3 id="formTitle" class="text-2xl font-semibold mb-4">Add Package</h3><form id="packageForm" class="space-y-4"><input type="hidden" id="packageIdInput"><div><label for="packageName">Package Name</label><input type="text" id="packageName" required class="mt-1 w-full rounded-md border-gray-300"></div><div><label for="packageImageUrl">Image URL</label><input type="url" id="packageImageUrl" class="mt-1 w-full rounded-md border-gray-300"></div><div><label for="packageDescription">Description</label><textarea id="packageDescription" rows="4" class="mt-1 w-full rounded-md border-gray-300"></textarea></div><div><label for="packageItinerary">Itinerary</label><textarea id="packageItinerary" rows="6" class="mt-1 w-full rounded-md border-gray-300"></textarea></div><div><label for="packageDuration">Duration</label><input type="number" id="packageDuration" required class="mt-1 w-full rounded-md border-gray-300"></div><div><label for="packagePrice">Price</label><input type="number" step="0.01" id="packagePrice" required class="mt-1 w-full rounded-md border-gray-300"></div><div><label for="packageDestination">Destination</label><select id="packageDestination" required class="mt-1 w-full rounded-md border-gray-300"></select></div><div class="flex space-x-4 pt-2"><button type="submit" class="w-full bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg btn">Save</button><button type="button" id="cancelEditBtn" class="hidden w-full bg-gray-300 font-semibold py-2 px-4 rounded-lg btn">Cancel</button></div></form></div><div class="lg:col-span-2"><h3 class="text-2xl font-semibold mb-4">Existing Packages</h3><div class="overflow-x-auto bg-white rounded-lg shadow"><table class="min-w-full divide-y"><thead class="bg-gray-50"><tr><th class="px-6 py-3 text-left text-xs font-medium uppercase">Name</th><th class="px-6 py-3 text-left text-xs font-medium uppercase">Destination</th><th class="px-6 py-3 text-left text-xs font-medium uppercase">Price</th><th class="px-6 py-3 text-right text-xs font-medium uppercase">Actions</th></tr></thead><tbody id="packagesTableBody" class="bg-white divide-y"></tbody></table></div></div></div></div><div id="destinationsTabContent" class="hidden"><div class="grid lg:grid-cols-3 gap-8"><div class="lg:col-span-1 bg-gray-50 p-6 rounded-lg self-start"><h3 id="destinationFormTitle" class="text-2xl font-semibold mb-4">Add Destination</h3><form id="destinationForm" class="space-y-4"><input type="hidden" id="destinationIdInput"><div><label for="destinationName">Name</label><input type="text" id="destinationName" required class="mt-1 w-full rounded-md border-gray-300"></div><div><label for="destinationCountry">Country</label><input type="text" id="destinationCountry" class="mt-1 w-full rounded-md border-gray-300"></div><div><label for="destinationImageUrl">Image URL</label><input type="url" id="destinationImageUrl" class="mt-1 w-full rounded-md border-gray-300"></div><div><label for="destinationDescription">Description</label><textarea id="destinationDescription" rows="4" class="mt-1 w-full rounded-md border-gray-300"></textarea></div><div class="flex space-x-4 pt-2"><button type="submit" class="w-full bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg btn">Save</button><button type="button" id="cancelDestinationEditBtn" class="hidden w-full bg-gray-300 font-semibold py-2 px-4 rounded-lg btn">Cancel</button></div></form></div><div class="lg:col-span-2"><h3 class="text-2xl font-semibold mb-4">Existing Destinations</h3><div class="overflow-x-auto bg-white rounded-lg shadow"><table class="min-w-full divide-y"><thead class="bg-gray-50"><tr><th class="px-6 py-3 text-left text-xs font-medium uppercase">Name</th><th class="px-6 py-3 text-left text-xs font-medium uppercase">Country</th><th class="px-6 py-3 text-right text-xs font-medium uppercase">Actions</th></tr></thead><tbody id="destinationsTableBody" class="bg-white divide-y"></tbody></table></div></div></div></div></div></div>
+    <div id="confirmModal" class="modal-backdrop"><div class="modal-content max-w-sm text-center"><h3 id="confirmTitle" class="text-xl font-bold mb-4">Are you sure?</h3><p id="confirmMessage" class="text-gray-600 mb-6"></p><div class="flex justify-center gap-4"><button id="confirmCancelBtn" class="bg-gray-300 font-semibold py-2 px-6 rounded-lg btn">Cancel</button><button id="confirmOkBtn" class="bg-red-600 text-white font-semibold py-2 px-6 rounded-lg btn">Delete</button></div></div></div>
+    <div id="bookingModal" class="modal-backdrop"><div class="modal-content max-w-lg"><h2 class="text-2xl font-bold mb-4">Book Your Trip</h2><div id="bookingDetails" class="space-y-2 mb-4"></div><form id="bookingForm" class="space-y-4"><div><label for="numTravelers" class="block text-sm font-medium">Travelers</label><input type="number" id="numTravelers" name="numberOfTravelers" min="1" value="1" required class="mt-1 w-full p-2 border rounded-lg"></div><div class="text-xl font-bold">Total: <span id="totalPrice" class="text-blue-600"></span></div><button type="submit" id="confirmBookingBtn" class="w-full bg-green-600 text-white p-3 rounded-lg font-bold hover:bg-green-700 btn">Confirm Booking</button></form><button id="closeBookingModal" class="absolute top-2 right-4 text-gray-500 text-3xl">&times;</button></div></div>
+    <div id="myBookingsModal" class="modal-backdrop"><div class="modal-content max-w-4xl max-h-[90vh] overflow-y-auto"><div class="flex justify-between items-center mb-6"><h2 class="text-3xl font-bold">My Bookings</h2><button id="closeMyBookingsModal" class="text-gray-500 text-3xl">&times;</button></div><div class="overflow-x-auto bg-white rounded-lg shadow"><table class="min-w-full divide-y"><thead class="bg-gray-50"><tr><th class="px-6 py-3 text-left text-xs font-medium uppercase">Package</th><th class="px-6 py-3 text-left text-xs font-medium uppercase">Date</th><th class="px-6 py-3 text-left text-xs font-medium uppercase">Travelers</th><th class="px-6 py-3 text-left text-xs font-medium uppercase">Total Price</th></tr></thead><tbody id="myBookingsTableBody" class="bg-white divide-y"></tbody></table></div></div></div>
+    <div id="detailsModal" class="modal-backdrop"><div id="detailsModalContent" class="modal-content max-w-4xl max-h-[90vh] overflow-y-auto"></div></div>
+    <div id="destinationPackagesModal" class="modal-backdrop"><div class="modal-content max-w-5xl max-h-[90vh] overflow-y-auto"><div class="flex justify-between items-center mb-6"><h2 id="destinationPackagesTitle" class="text-3xl font-bold text-gray-800"></h2><button id="closeDestinationPackagesModal" class="text-gray-500 hover:text-gray-800 text-3xl font-light">&times;</button></div><div id="destinationPackagesGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"></div></div></div>
+    <div id="statusMessage" class="hidden fixed bottom-5 right-5 bg-green-600 text-white px-6 py-3 rounded-lg shadow-xl z-[150] transition-transform duration-300 translate-y-20"></div>
+
+    <!-- ============================================= -->
+    <!--      <<< (3) JAVASCRIPT LOGIC SECTION >>>     -->
+    <!-- ============================================= -->
+    <script type="module">
+        // --- CONFIG & STATE ---
+        const API_BASE_URL = 'https://localhost:7151';
+        let allPackages = [], allDestinations = {}, isLoginMode = true, currentBookingPackage = null;
+
+        // --- DOM ELEMENTS ---
+        const DOMElements = {
+            packagesGrid: document.getElementById('packages-grid'), loader: document.getElementById('loader'),
+            authButton: document.getElementById('authButton'), adminButton: document.getElementById('adminButton'), myBookingsButton: document.getElementById('myBookingsButton'),
+            authModal: document.getElementById('authModal'), adminModal: document.getElementById('adminModal'), confirmModal: document.getElementById('confirmModal'),
+            bookingModal: document.getElementById('bookingModal'), myBookingsModal: document.getElementById('myBookingsModal'), detailsModal: document.getElementById('detailsModal'),
+            destinationPackagesModal: document.getElementById('destinationPackagesModal'),
+            detailsModalContent: document.getElementById('detailsModalContent'),
+            closeAuthModal: document.getElementById('closeAuthModal'), closeAdminModalBtn: document.getElementById('closeAdminModalBtn'),
+            closeBookingModal: document.getElementById('closeBookingModal'), closeMyBookingsModal: document.getElementById('closeMyBookingsModal'),
+            closeDestinationPackagesModal: document.getElementById('closeDestinationPackagesModal'),
+            authForm: document.getElementById('authForm'), authTitle: document.getElementById('authTitle'),
+            authSubmitButton: document.getElementById('authSubmitButton'), authToggleLink: document.getElementById('authToggleLink'),
+            nameField: document.getElementById('nameField'), authMessage: document.getElementById('authMessage'), packageForm: document.getElementById('packageForm'),
+            formTitle: document.getElementById('formTitle'), packageIdInput: document.getElementById('packageIdInput'),
+            packageNameInput: document.getElementById('packageName'), packageImageUrlInput: document.getElementById('packageImageUrl'),
+            packageDescriptionInput: document.getElementById('packageDescription'), packageItineraryInput: document.getElementById('packageItinerary'),
+            packageDurationInput: document.getElementById('packageDuration'), packagePriceInput: document.getElementById('packagePrice'),
+            packageDestinationSelect: document.getElementById('packageDestination'), packagesTableBody: document.getElementById('packagesTableBody'),
+            cancelEditBtn: document.getElementById('cancelEditBtn'), bookingDetails: document.getElementById('bookingDetails'),
+            bookingForm: document.getElementById('bookingForm'), numTravelersInput: document.getElementById('numTravelers'),
+            totalPriceDisplay: document.getElementById('totalPrice'), myBookingsTableBody: document.getElementById('myBookingsTableBody'),
+            userGreeting: document.getElementById('userGreeting'), statusMessage: document.getElementById('statusMessage'),
+            searchInput: document.getElementById('searchInput'), destinationFilter: document.getElementById('destinationFilter'),
+            priceFilter: document.getElementById('priceFilter'), resetFilters: document.getElementById('resetFilters'),
+            packagesTab: document.getElementById('packagesTab'), destinationsTab: document.getElementById('destinationsTab'),
+            packagesTabContent: document.getElementById('packagesTabContent'), destinationsTabContent: document.getElementById('destinationsTabContent'),
+            destinationForm: document.getElementById('destinationForm'), destinationFormTitle: document.getElementById('destinationFormTitle'),
+            destinationIdInput: document.getElementById('destinationIdInput'), destinationNameInput: document.getElementById('destinationName'),
+            destinationCountryInput: document.getElementById('destinationCountry'), destinationImageUrlInput: document.getElementById('destinationImageUrl'),
+            destinationDescriptionInput: document.getElementById('destinationDescription'), destinationsTableBody: document.getElementById('destinationsTableBody'),
+            cancelDestinationEditBtn: document.getElementById('cancelDestinationEditBtn'),
+            destinationsScrollContainer: document.getElementById('destinations-scroll-container'),
+            packagesHeading: document.getElementById('packages-heading'),
+            searchButton: document.getElementById('searchButton'),
+            destinationPackagesTitle: document.getElementById('destinationPackagesTitle'),
+            destinationPackagesGrid: document.getElementById('destinationPackagesGrid'),
+        };
+
+        // --- API HELPERS ---
+        async function apiFetch(endpoint, options = {}) {
+            const token = localStorage.getItem('jwt_token');
+            const headers = { 'Content-Type': 'application/json', ...options.headers };
+            if (token) headers['Authorization'] = `Bearer ${token}`;
+            try {
+                const response = await fetch(`${API_BASE_URL}${endpoint}`, { ...options, headers });
+                if (!response.ok) { const errorText = await response.text(); throw new Error(errorText || `HTTP error! Status: ${response.status}`); }
+                if (response.status === 204) return null;
+                const contentType = response.headers.get("content-type");
+                return contentType?.includes("application/json") ? await response.json() : null;
+            } catch (error) { console.error(`API Fetch Error (${endpoint}):`, error); showStatusMessage(error.message, true); throw error; }
+        }
+
+        // --- RENDER FUNCTIONS ---
+        function displayPackages(packages, destinations, container = DOMElements.packagesGrid) {
+            container.innerHTML = '';
+            const destinationMap = destinations.reduce((map, dest) => ({ ...map, [dest.id]: dest }), {});
+            if (!packages || packages.length === 0) { container.innerHTML = `<p class="text-center text-red-500 col-span-full">No tour packages found matching your criteria.</p>`; return; }
+            packages.forEach((pkg) => {
+                const destinationName = destinationMap[pkg.destinationId]?.name || 'Unknown';
+                const imageUrl = pkg.imageUrl || `https://placehold.co/600x400/3498db/ffffff?text=${encodeURIComponent(pkg.name)}`;
+                const card = document.createElement('div');
+                card.className = "bg-white rounded-lg shadow-lg overflow-hidden flex flex-col group cursor-pointer";
+                card.dataset.packageId = pkg.id;
+                card.innerHTML = `<div class="overflow-hidden"><img src="${imageUrl}" alt="${pkg.name}" class="w-full h-56 object-cover group-hover:scale-110 transition-transform duration-300"></div><div class="p-6 flex-grow flex flex-col"><h3 class="text-2xl font-bold text-gray-800 group-hover:text-blue-600">${pkg.name}</h3><p class="text-blue-600 font-semibold my-2">${destinationName}</p><div class="flex-grow"></div><div class="flex justify-between items-center mt-4"><span class="text-xl font-bold text-gray-900">$${pkg.price}</span><span class="text-base text-gray-500">${pkg.durationDays} Days</span></div><button class="book-now-btn btn mt-6 w-full bg-green-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-green-600 z-10 relative" data-package-id="${pkg.id}">Book Now</button></div>`;
+                container.appendChild(card);
+            });
+        }
+        function renderAdminPackagesTable(packages) { DOMElements.packagesTableBody.innerHTML = ''; if (!packages || packages.length === 0) { DOMElements.packagesTableBody.innerHTML = `<tr><td colspan="4" class="text-center py-4">No packages found.</td></tr>`; return; } packages.forEach(pkg => { const destName = allDestinations[pkg.destinationId]?.name || 'N/A'; DOMElements.packagesTableBody.innerHTML += `<tr class="hover:bg-gray-50"><td class="px-6 py-4 text-sm font-medium text-gray-900">${pkg.name}</td><td class="px-6 py-4 text-sm text-gray-500">${destName}</td><td class="px-6 py-4 text-sm text-gray-500">$${pkg.price}</td><td class="px-6 py-4 text-right text-sm font-medium"><button class="text-blue-600 hover:text-blue-900 edit-btn" data-id="${pkg.id}">Edit</button><button class="text-red-600 hover:text-red-900 ml-4 delete-btn" data-id="${pkg.id}">Delete</button></td></tr>`; }); }
+        function populateDestinationSelect(destinations) { DOMElements.packageDestinationSelect.innerHTML = '<option value="">Select Destination</option>'; destinations.forEach(dest => DOMElements.packageDestinationSelect.innerHTML += `<option value="${dest.id}">${dest.name}</option>`); }
+        function renderMyBookingsTable(bookings) {
+            const tableBody = DOMElements.myBookingsTableBody;
+            tableBody.innerHTML = '';
+            if (!bookings || bookings.length === 0) { tableBody.innerHTML = `<tr><td colspan="4" class="text-center py-8">You have no bookings.</td></tr>`; return; }
+            bookings.forEach(booking => {
+                const bookingDate = new Date(booking.bookingDate).toLocaleDateString();
+                tableBody.innerHTML += `<tr><td class="px-6 py-4 text-sm font-medium text-gray-900">${booking.tourPackage.name}</td><td class="px-6 py-4 text-sm text-gray-500">${bookingDate}</td><td class="px-6 py-4 text-sm text-gray-500">${booking.numberOfTravelers}</td><td class="px-6 py-4 text-sm font-medium text-gray-800">$${booking.totalPrice.toFixed(2)}</td></tr>`;
+            });
+        }
+        function renderDetailsModal(pkg) { const destinationName = allDestinations[pkg.destinationId]?.name || 'Unknown'; const imageUrl = pkg.imageUrl || `https://placehold.co/1200x600/3498db/ffffff?text=${encodeURIComponent(pkg.name)}`; DOMElements.detailsModalContent.innerHTML = `<button id="closeDetailsModal" class="absolute top-4 right-6 text-gray-500 text-4xl z-20">&times;</button><img src="${imageUrl}" alt="${pkg.name}" class="w-full h-64 object-cover rounded-t-lg"><div class="p-6"><h2 class="text-4xl font-bold">${pkg.name}</h2><p class="text-xl text-blue-600 font-semibold mb-6">${destinationName}</p><div class="prose-styles max-w-none"><h3>Description</h3><p>${pkg.description || 'No description.'}</p><h3>Itinerary</h3><div class="whitespace-pre-wrap">${pkg.itinerary || 'No itinerary.'}</div></div></div>`; toggleModal(DOMElements.detailsModal, true); document.getElementById('closeDetailsModal').addEventListener('click', () => toggleModal(DOMElements.detailsModal, false)); }
+        function renderAdminDestinationsTable(destinations) { DOMElements.destinationsTableBody.innerHTML = ''; if (!destinations || destinations.length === 0) { DOMElements.destinationsTableBody.innerHTML = `<tr><td colspan="3" class="text-center py-4">No destinations found.</td></tr>`; return; } destinations.forEach(dest => { DOMElements.destinationsTableBody.innerHTML += `<tr class="hover:bg-gray-50"><td class="px-6 py-4 text-sm font-medium">${dest.name}</td><td class="px-6 py-4 text-sm text-gray-500">${dest.country || 'N/A'}</td><td class="px-6 py-4 text-right text-sm"><button class="text-blue-600 edit-destination-btn" data-id="${dest.id}">Edit</button><button class="text-red-600 ml-4 delete-destination-btn" data-id="${dest.id}">Delete</button></td></tr>`; }); }
+        function renderTrendingDestinations(destinations) { DOMElements.destinationsScrollContainer.innerHTML = ''; destinations.forEach(dest => { const imageUrl = dest.imageUrl || `https://placehold.co/400x500/8e44ad/ffffff?text=${encodeURIComponent(dest.name)}`; DOMElements.destinationsScrollContainer.innerHTML += `<div class="destination-card w-64 md:w-80 h-96 rounded-xl overflow-hidden relative fade-in-up group cursor-pointer" data-destination-id="${dest.id}"><img src="${imageUrl}" class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110" alt="${dest.name}"><div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div><div class="absolute bottom-0 left-0 p-6 text-white"><h3 class="text-2xl font-bold">${dest.name}</h3><p class="text-gray-200">${dest.country}</p></div></div>`; }); }
+        function renderDestinationPackagesModal(filteredPackages, destinationName) { DOMElements.destinationPackagesTitle.textContent = `Packages in ${destinationName}`; if (!filteredPackages || filteredPackages.length === 0) { DOMElements.destinationPackagesGrid.innerHTML = `<p class="text-center text-gray-500 col-span-full">No packages found for this destination.</p>`; } else { displayPackages(filteredPackages, Object.values(allDestinations), DOMElements.destinationPackagesGrid); } toggleModal(DOMElements.destinationPackagesModal, true); }
+
+        // --- UI, AUTH & FILTER FUNCTIONS ---
+        function toggleModal(el, show) { el.classList.toggle('active', show); }
+        function showStatusMessage(message, isError = false) { DOMElements.statusMessage.textContent = message; DOMElements.statusMessage.className = `fixed bottom-5 right-5 px-6 py-3 rounded-lg shadow-xl z-[150] ${isError ? 'bg-red-600' : 'bg-green-600'} text-white transition-transform duration-300`; DOMElements.statusMessage.classList.remove('translate-y-20'); setTimeout(() => DOMElements.statusMessage.classList.add('translate-y-20'), 3000); }
+        function updateUIForAuthState() { const token = localStorage.getItem('jwt_token'); const { userGreeting, authButton, adminButton, myBookingsButton } = DOMElements; if (token) { try { const payload = JSON.parse(atob(token.split('.')[1])); const userName = payload.unique_name, userRole = payload.role; userGreeting.textContent = `Welcome, ${userName}`; userGreeting.classList.remove('hidden'); myBookingsButton.classList.remove('hidden'); authButton.textContent = 'Logout'; adminButton.classList.toggle('hidden', userRole !== 'Admin'); } catch (e) { handleLogout(); } } else { userGreeting.classList.add('hidden'); myBookingsButton.classList.add('hidden'); adminButton.classList.add('hidden'); authButton.textContent = 'Login'; } }
+        function handleLogout() { localStorage.removeItem('jwt_token'); updateUIForAuthState(); showStatusMessage('You have been logged out.'); }
+        const showConfirmModal = (title, message, onConfirm) => { document.getElementById('confirmTitle').textContent = title; document.getElementById('confirmMessage').textContent = message; toggleModal(DOMElements.confirmModal, true); const okBtn = document.getElementById('confirmOkBtn'); const newOkBtn = okBtn.cloneNode(true); okBtn.parentNode.replaceChild(newOkBtn, okBtn); newOkBtn.addEventListener('click', () => { onConfirm(); toggleModal(DOMElements.confirmModal, false); }); document.getElementById('confirmCancelBtn').addEventListener('click', () => toggleModal(DOMElements.confirmModal, false), { once: true }); };
+        function resetAdminForm() { DOMElements.packageForm.reset(); DOMElements.packageIdInput.value = ''; DOMElements.formTitle.textContent = 'Add New Package'; DOMElements.cancelEditBtn.classList.add('hidden'); }
+        function resetDestinationForm() { DOMElements.destinationForm.reset(); DOMElements.destinationIdInput.value = ''; DOMElements.destinationFormTitle.textContent = 'Add New Destination'; DOMElements.cancelDestinationEditBtn.classList.add('hidden'); }
+        function updateTotalPrice() { if (currentBookingPackage) { const numTravelers = parseInt(DOMElements.numTravelersInput.value) || 0; DOMElements.totalPriceDisplay.textContent = `$${(numTravelers * currentBookingPackage.price).toFixed(2)}`; } }
+        function applyFiltersAndRender() { const searchText = DOMElements.searchInput.value.toLowerCase(), destinationId = DOMElements.destinationFilter.value, priceRange = DOMElements.priceFilter.value; let filteredPackages = allPackages; if (searchText) filteredPackages = filteredPackages.filter(pkg => pkg.name.toLowerCase().includes(searchText) || (allDestinations[pkg.destinationId]?.name.toLowerCase() || '').includes(searchText)); if (destinationId !== 'all') filteredPackages = filteredPackages.filter(pkg => pkg.destinationId == destinationId); if (priceRange !== 'all') { if (priceRange === '1000') filteredPackages = filteredPackages.filter(pkg => pkg.price < 1000); else if (priceRange === '2000') filteredPackages = filteredPackages.filter(pkg => pkg.price >= 1000 && pkg.price <= 2000); else if (priceRange === '2001') filteredPackages = filteredPackages.filter(pkg => pkg.price > 2000); } displayPackages(filteredPackages, Object.values(allDestinations)); DOMElements.packagesHeading.scrollIntoView({ behavior: 'smooth' }); }
+        function populateDestinationFilter(destinations) { DOMElements.destinationFilter.innerHTML = '<option value="all">All Destinations</option>'; destinations.forEach(dest => { const option = document.createElement('option'); option.value = dest.id; option.textContent = dest.name; DOMElements.destinationFilter.appendChild(option); }); }
+        function setupScrollAnimations() { const observer = new IntersectionObserver((entries) => { entries.forEach(entry => { if (entry.isIntersecting) { entry.target.classList.add('visible'); } }); }, { threshold: 0.1 }); document.querySelectorAll('.fade-in-up').forEach(el => observer.observe(el)); }
+        function startHeroSlideshow() {
+            const images = document.querySelectorAll('#hero-images-container img');
+            if (images.length === 0) return;
+            let currentImageIndex = 0;
+            setInterval(() => {
+                images[currentImageIndex].classList.remove('visible');
+                currentImageIndex = (currentImageIndex + 1) % images.length;
+                images[currentImageIndex].classList.add('visible');
+            }, 2000);
+        }
+
+        // --- EVENT HANDLERS ---
+        function setupEventListeners() {
+            DOMElements.authButton.addEventListener('click', () => { if (localStorage.getItem('jwt_token')) handleLogout(); else toggleModal(DOMElements.authModal, true); });
+            DOMElements.closeAuthModal.addEventListener('click', () => toggleModal(DOMElements.authModal, false));
+            DOMElements.adminButton.addEventListener('click', () => toggleModal(DOMElements.adminModal, true));
+            DOMElements.closeAdminModalBtn.addEventListener('click', () => toggleModal(DOMElements.adminModal, false));
+            DOMElements.cancelEditBtn.addEventListener('click', resetAdminForm);
+            DOMElements.closeBookingModal.addEventListener('click', () => toggleModal(DOMElements.bookingModal, false));
+            DOMElements.numTravelersInput.addEventListener('input', updateTotalPrice);
+            DOMElements.myBookingsButton.addEventListener('click', async () => { toggleModal(DOMElements.myBookingsModal, true); DOMElements.myBookingsTableBody.innerHTML = `<tr><td colspan="4" class="text-center py-8">Loading...</td></tr>`; try { const bookings = await apiFetch('/api/bookings/mybookings'); renderMyBookingsTable(bookings); } catch (error) { DOMElements.myBookingsTableBody.innerHTML = `<tr><td colspan="4" class="text-center text-red-500 py-8">Could not load bookings.</td></tr>`; } });
+            DOMElements.closeMyBookingsModal.addEventListener('click', () => toggleModal(DOMElements.myBookingsModal, false));
+            DOMElements.authToggleLink.addEventListener('click', (e) => { e.preventDefault(); isLoginMode = !isLoginMode; DOMElements.authForm.reset(); DOMElements.authMessage.classList.add('hidden'); DOMElements.authTitle.textContent = isLoginMode ? 'Login' : 'Register'; DOMElements.nameField.classList.toggle('hidden', isLoginMode); DOMElements.authSubmitButton.textContent = isLoginMode ? 'Login' : 'Register'; DOMElements.authToggleLink.innerHTML = isLoginMode ? 'Need an account? Register' : 'Already have an account? Login'; });
+            DOMElements.authForm.addEventListener('submit', async (e) => { e.preventDefault(); const formData = Object.fromEntries(new FormData(DOMElements.authForm)); const endpoint = isLoginMode ? '/api/auth/login' : '/api/auth/register'; try { if (isLoginMode) { const result = await apiFetch(endpoint, { method: 'POST', body: JSON.stringify(formData) }); localStorage.setItem('jwt_token', result.token); showStatusMessage('Login successful!'); toggleModal(DOMElements.authModal, false); updateUIForAuthState(); } else { await apiFetch(endpoint, { method: 'POST', body: JSON.stringify(formData) }); showStatusMessage('Registration successful!'); DOMElements.authToggleLink.click(); } } catch (error) { DOMElements.authMessage.textContent = error.message; DOMElements.authMessage.className = 'p-3 mb-4 rounded-md text-center bg-red-500 text-white'; } });
+            DOMElements.packageForm.addEventListener('submit', async (e) => { e.preventDefault(); const packageId = DOMElements.packageIdInput.value; const packageData = { id: packageId ? parseInt(packageId) : 0, name: DOMElements.packageNameInput.value, imageUrl: DOMElements.packageImageUrlInput.value, description: DOMElements.packageDescriptionInput.value, itinerary: DOMElements.packageItineraryInput.value, durationDays: parseInt(DOMElements.packageDurationInput.value), price: parseFloat(DOMElements.packagePriceInput.value), destinationId: parseInt(DOMElements.packageDestinationSelect.value) }; const endpoint = packageId ? `/api/admin/tourpackages/${packageId}` : '/api/admin/tourpackages/add'; const method = packageId ? 'PUT' : 'POST'; try { await apiFetch(endpoint, { method, body: JSON.stringify(packageData) }); showStatusMessage(`Package ${packageId ? 'updated' : 'added'}!`); resetAdminForm(); initializePage(); } catch (error) { } });
+            DOMElements.packagesTableBody.addEventListener('click', (e) => { const target = e.target.closest('button'); if (!target) return; const packageId = target.dataset.id; if (target.classList.contains('edit-btn')) { const pkg = allPackages.find(p => p.id == packageId); DOMElements.formTitle.textContent = 'Edit Package'; DOMElements.packageIdInput.value = pkg.id; DOMElements.packageNameInput.value = pkg.name; DOMElements.packageImageUrlInput.value = pkg.imageUrl; DOMElements.packageDescriptionInput.value = pkg.description; DOMElements.packageItineraryInput.value = pkg.itinerary; DOMElements.packageDurationInput.value = pkg.durationDays; DOMElements.packagePriceInput.value = pkg.price; DOMElements.packageDestinationSelect.value = pkg.destinationId; DOMElements.cancelEditBtn.classList.remove('hidden'); } else if (target.classList.contains('delete-btn')) { showConfirmModal('Delete Package', 'Are you sure?', async () => { try { await apiFetch(`/api/admin/tourpackages/${packageId}`, { method: 'DELETE' }); showStatusMessage('Package deleted!'); initializePage(); } catch (error) { } }); } });
+            DOMElements.packagesGrid.addEventListener('click', async (e) => { const bookBtn = e.target.closest('.book-now-btn'); const card = e.target.closest('.group'); if (bookBtn) { if (!localStorage.getItem('jwt_token')) { showStatusMessage("Please log in to book.", true); toggleModal(DOMElements.authModal, true); return; } const packageId = bookBtn.dataset.packageId; currentBookingPackage = allPackages.find(p => p.id == packageId); if (currentBookingPackage) { DOMElements.bookingDetails.innerHTML = `<p><strong>Package:</strong> ${currentBookingPackage.name}</p><p><strong>Price/traveler:</strong> $${currentBookingPackage.price}</p>`; DOMElements.numTravelersInput.value = 1; updateTotalPrice(); toggleModal(DOMElements.bookingModal, true); } } else if (card) { const packageId = card.dataset.packageId; const pkg = allPackages.find(p => p.id == packageId); if (pkg) await renderDetailsModal(pkg); } });
+            DOMElements.bookingForm.addEventListener('submit', async (e) => { e.preventDefault(); const bookingData = { tourPackageId: currentBookingPackage.id, numberOfTravelers: parseInt(DOMElements.numTravelersInput.value) }; try { await apiFetch('/api/bookings', { method: 'POST', body: JSON.stringify(bookingData) }); showStatusMessage('Booking successful!'); toggleModal(DOMElements.bookingModal, false); } catch (error) { } });
+            DOMElements.searchInput.addEventListener('input', applyFiltersAndRender);
+            DOMElements.destinationFilter.addEventListener('change', applyFiltersAndRender);
+            DOMElements.priceFilter.addEventListener('change', applyFiltersAndRender);
+            DOMElements.resetFilters.addEventListener('click', () => { DOMElements.searchInput.value = ''; DOMElements.destinationFilter.value = 'all'; DOMElements.priceFilter.value = 'all'; applyFiltersAndRender(); });
+            DOMElements.searchButton.addEventListener('click', applyFiltersAndRender);
+            DOMElements.packagesTab.addEventListener('click', () => { DOMElements.packagesTab.classList.add('active'); DOMElements.destinationsTab.classList.remove('active'); DOMElements.packagesTabContent.classList.remove('hidden'); DOMElements.destinationsTabContent.classList.add('hidden'); });
+            DOMElements.destinationsTab.addEventListener('click', () => { DOMElements.destinationsTab.classList.add('active'); DOMElements.packagesTab.classList.remove('active'); DOMElements.destinationsTabContent.classList.remove('hidden'); DOMElements.packagesTabContent.classList.add('hidden'); });
+            DOMElements.cancelDestinationEditBtn.addEventListener('click', resetDestinationForm);
+            DOMElements.destinationForm.addEventListener('submit', async (e) => { e.preventDefault(); const destId = DOMElements.destinationIdInput.value; const destData = { name: DOMElements.destinationNameInput.value, country: DOMElements.destinationCountryInput.value, imageUrl: DOMElements.destinationImageUrlInput.value, description: DOMElements.destinationDescriptionInput.value }; const endpoint = destId ? `/api/admin/destinations/${destId}` : '/api/admin/destinations'; const method = destId ? 'PUT' : 'POST'; try { await apiFetch(endpoint, { method, body: JSON.stringify(destData) }); showStatusMessage(`Destination ${destId ? 'updated' : 'added'}!`); resetDestinationForm(); initializePage(); } catch (error) { } });
+            DOMElements.destinationsTableBody.addEventListener('click', (e) => { const target = e.target.closest('button'); if (!target) return; const destId = target.dataset.id; if (target.classList.contains('edit-destination-btn')) { const dest = allDestinations[destId]; DOMElements.destinationFormTitle.textContent = 'Edit Destination'; DOMElements.destinationIdInput.value = dest.id; DOMElements.destinationNameInput.value = dest.name; DOMElements.destinationCountryInput.value = dest.country; DOMElements.destinationImageUrlInput.value = dest.imageUrl; DOMElements.destinationDescriptionInput.value = dest.description; DOMElements.cancelDestinationEditBtn.classList.remove('hidden'); } else if (target.classList.contains('delete-destination-btn')) { showConfirmModal('Delete Destination', 'Are you sure?', async () => { try { await apiFetch(`/api/admin/destinations/${destId}`, { method: 'DELETE' }); showStatusMessage('Destination deleted!'); initializePage(); } catch (error) { } }); } });
+            DOMElements.destinationsScrollContainer.addEventListener('click', (e) => { const card = e.target.closest('.destination-card'); if (card) { const destId = card.dataset.destinationId; const destination = allDestinations[destId]; if (destination) { const filteredPackages = allPackages.filter(p => p.destinationId == destId); renderDestinationPackagesModal(filteredPackages, destination.name); } } });
+            DOMElements.closeDestinationPackagesModal.addEventListener('click', () => toggleModal(DOMElements.destinationPackagesModal, false));
+        }
+
+        // --- INITIALIZATION ---
+        async function initializePage() {
+            try {
+                const [destinations, packages] = await Promise.all([apiFetch('/api/destinations'), apiFetch('/api/tourpackages')]);
+                allDestinations = destinations.reduce((acc, dest) => ({ ...acc, [dest.id]: dest }), {});
+                allPackages = packages;
+                DOMElements.loader.classList.add('hidden');
+                displayPackages(packages, Object.values(allDestinations));
+                renderAdminPackagesTable(packages);
+                renderAdminDestinationsTable(destinations);
+                populateDestinationSelect(destinations);
+                populateDestinationFilter(destinations);
+                renderTrendingDestinations(destinations);
+                setupScrollAnimations();
+            } catch (error) { DOMElements.loader.innerHTML = `<p class="text-red-600 font-bold text-center text-lg">${error.message}</p>`; }
+        }
+
+        // --- START THE APPLICATION ---
+        setupEventListeners();
+        updateUIForAuthState();
+        initializePage();
+        startHeroSlideshow();
+    </script>
+</body>
+</html>
